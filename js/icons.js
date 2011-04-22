@@ -1,5 +1,6 @@
-window.onload = function () {
-    var paths = {
+var plump = (function (Raphael) {
+    var plump = {},
+        paths = {
         "?": "M16,1.466C7.973,1.466,1.466,7.973,1.466,16c0,8.027,6.507,14.534,14.534,14.534c8.027,0,14.534-6.507,14.534-14.534C30.534,7.973,24.027,1.466,16,1.466z M17.328,24.371h-2.707v-2.596h2.707V24.371zM17.328,19.003v0.858h-2.707v-1.057c0-3.19,3.63-3.696,3.63-5.963c0-1.034-0.924-1.826-2.134-1.826c-1.254,0-2.354,0.924-2.354,0.924l-1.541-1.915c0,0,1.519-1.584,4.137-1.584c2.487,0,4.796,1.54,4.796,4.136C21.156,16.208,17.328,16.627,17.328,19.003z",
         i: "M16,1.466C7.973,1.466,1.466,7.973,1.466,16c0,8.027,6.507,14.534,14.534,14.534c8.027,0,14.534-6.507,14.534-14.534C30.534,7.973,24.027,1.466,16,1.466z M14.757,8h2.42v2.574h-2.42V8z M18.762,23.622H16.1c-1.034,0-1.475-0.44-1.475-1.496v-6.865c0-0.33-0.176-0.484-0.484-0.484h-0.88V12.4h2.662c1.035,0,1.474,0.462,1.474,1.496v6.887c0,0.309,0.176,0.484,0.484,0.484h0.88V23.622z",
         $: "M16,1.466C7.973,1.466,1.466,7.973,1.466,16c0,8.027,6.507,14.534,14.534,14.534c8.027,0,14.534-6.507,14.534-14.534C30.534,7.973,24.027,1.466,16,1.466z M17.255,23.88v2.047h-1.958v-2.024c-3.213-0.44-4.621-3.08-4.621-3.08l2.002-1.673c0,0,1.276,2.223,3.586,2.223c1.276,0,2.244-0.683,2.244-1.849c0-2.729-7.349-2.398-7.349-7.459c0-2.2,1.738-3.785,4.137-4.159V5.859h1.958v2.046c1.672,0.22,3.652,1.1,3.652,2.993v1.452h-2.596v-0.704c0-0.726-0.925-1.21-1.959-1.21c-1.32,0-2.288,0.66-2.288,1.584c0,2.794,7.349,2.112,7.349,7.415C21.413,21.614,19.785,23.506,17.255,23.88z",
@@ -141,72 +142,89 @@ window.onload = function () {
 
     /****************/
     // Helper functions
-    Object.size = function(obj) {
-        var size = 0, key;
-        for (key in obj) {
+    Object.size = function (obj) {
+        var size = 0;
+        for (var key in obj) {
             if (obj.hasOwnProperty(key)) size++;
         }
         return size;
     };
+    Object.merge = function (obj, obj2) {
+        // Keeps obj's values, if they exist
+        for (var key in obj2) {
+            if (obj2.hasOwnProperty(key)) {
+                obj[key] = obj[key] || obj2[key];
+            }
+        }
+        return obj;
+    };
     /****************/
 
 
-    window.icon = function(name, x, y, attrs) {
+    var icon = plump.icon = function(name, attrs) {
         var attrs = attrs || {},
-            none = {fill: "#000", opacity: 0};
-            attrs.stroke = attrs.stroke || 'none';
-            attrs.fill = attrs.fill || '#333';
+            none = {fill: "#000", opacity: 0},
+            x = attrs.x || 0,
+            y = attrs.y || 0;
+        attrs.stroke = attrs.stroke || 'none';
+        attrs.fill = attrs.fill || '#333';
 
-            // Non-standard attributes
-            attrs.size = attrs.size || 24;
-            attrs.glow = attrs.glow || '#eb5';
-            attrs['glow-width'] = attrs['glow-width'] || 2;
+        // Non-standard attributes
+        attrs.size = attrs.size || 24;
+        attrs.glow = attrs.glow || 'transparent';
+        attrs['glow-width'] = attrs['glow-width'] || 2;
+        if (attrs.hover) {
+            attrs.hover.duration = attrs.hover.duration || 0;
+        }
 
-        var r = Raphael(x-2, y-2, 28, 28),
+        var r = Raphael(x-2, y-2, attrs.size + 4, attrs.size + 4),
             s = r.path(paths[name]).scale(attrs.size/32, attrs.size/32, 0, 0).translate(2, 2).attr({fill: 'none', stroke: attrs.glow, 'stroke-width': attrs['glow-width']}),
             icon = r.path(paths[name]).scale(attrs.size/32, attrs.size/32, 0, 0).translate(2, 2).attr(attrs);
             r.rect(0, 0, 32, 32).attr(none).click(function () {
                 icon.attr({fill: "90-#0050af-#002c62"});
             }).hover(function () {
-                icon.attr({fill: Raphael.getColor()});
+                if (attrs.hover) {
+                    icon.animate(attrs.hover, attrs.hover.duration);
+                }
                 //s.stop().animate({opacity: 1}, 200);
             }, function () {
-                icon.stop();
+                icon.stop().attr(attrs);
                 //s.stop().attr({opacity: 0});
             });
     };
 
-    var row = function(icons, x, y) {
+    var row = plump.row = function(icons, attrs) {
         for (var name in icons) {
-            icon(name, x, y, icons[name]);
-            x += 37;
+            if (icons.hasOwnProperty(name)) {
+                icon(name, Object.merge(icons[name],attrs));
+                attrs.x += 37;
+            }
         }
     };
 
-    var column = function(icons, x, y) {
+    var column = plump.column = function(icons, attrs) {
         for (var name in icons) {
-            icon(name, x, y, icons[name]);
-            y += 37;
+            if (icons.hasOwnProperty(name)) {
+                icon(name, Object.merge(icons[name],attrs));
+                attrs.y += 37;
+            }
         }
     };
 
-    var radial = function(icons, cx, cy, r) {
+    var radial = plump.radial = function(icons, attrs) {
         spokes = Object.size(icons);
         angle = 2*Math.PI / spokes;
+        orig = {x: attrs.x, y: attrs.x};
         start = 0;
         for (var name in icons) {
-            y = cy + r*Math.cos(start)/2;
-            x = cx + r*Math.sin(start)/2;
-            icon(name, x, y, icons[name]);
-            start += angle;
+            if (icons.hasOwnProperty(name)) {
+                attrs.y = orig.y + attrs.r*Math.cos(start)/2;
+                attrs.x = orig.x + attrs.r*Math.sin(start)/2;
+                icon(name, Object.merge(icons[name], attrs));
+                start += angle;
+            }
         }
     };
-
-    row({"apple":{size: 16},"lab":{}, "umbrella":{}}, 30, 30);
-
-    column({"shuffle":{'fill':'blue'},"thunder":{}, "link":{}}, 30, 120);
-
-    radial({"apple":{},"lab":{}, "umbrella":{}, "globe": {}, "shuffle":{},"merge":{}, "split":{}, "fork":{}, "warning":{}, "raphael":{}, "snow":{}, "hail":{}}, 150, 150, 110);
 
     /*
     // Display all icons
@@ -219,4 +237,6 @@ window.onload = function () {
         }
     }
     */
-};
+
+    return plump;
+}(Raphael));

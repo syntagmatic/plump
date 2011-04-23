@@ -149,7 +149,7 @@ var plump = (function (Raphael) {
         }
         return size;
     };
-    Object.merge = function (obj, obj2) {
+    Object.extend = function (obj2, obj) {
         // Keeps obj's values, if they exist
         for (var key in obj2) {
             if (obj2.hasOwnProperty(key)) {
@@ -179,8 +179,8 @@ var plump = (function (Raphael) {
 
         var r = Raphael(x-2, y-2, attrs.size + 4, attrs.size + 4),
             s = r.path(paths[name]).scale(attrs.size/32, attrs.size/32, 0, 0).translate(2, 2).attr({fill: 'none', stroke: attrs.glow, 'stroke-width': attrs['glow-width']}),
-            icon = r.path(paths[name]).scale(attrs.size/32, attrs.size/32, 0, 0).translate(2, 2).attr(attrs);
-            r.rect(0, 0, 32, 32).attr(none).click(function () {
+            icon = r.path(paths[name]).scale(attrs.size/32, attrs.size/32, 0, 0).translate(2, 2).attr(attrs),
+            target = r.rect(0, 0, 32, 32).attr(none).click(function () {
                 icon.attr({fill: "90-#0050af-#002c62"});
             }).hover(function () {
                 if (attrs.hover) {
@@ -191,12 +191,18 @@ var plump = (function (Raphael) {
                 icon.stop().attr(attrs);
                 //s.stop().attr({opacity: 0});
             });
+        return { icon: icon
+               , target: target
+               , attrs: attrs
+               , name: name
+               , attr: function(attrs) { icon.attr(attrs); return this; }
+               }
     };
 
     var row = plump.row = function(icons, attrs) {
         for (var name in icons) {
             if (icons.hasOwnProperty(name)) {
-                icon(name, Object.merge(icons[name],attrs));
+                window[name] = icon(name, Object.extend(attrs, icons[name]));
                 attrs.x += 37;
             }
         }
@@ -205,7 +211,7 @@ var plump = (function (Raphael) {
     var column = plump.column = function(icons, attrs) {
         for (var name in icons) {
             if (icons.hasOwnProperty(name)) {
-                icon(name, Object.merge(icons[name],attrs));
+                icon(name, Object.extend(attrs, icons[name]));
                 attrs.y += 37;
             }
         }
@@ -220,7 +226,7 @@ var plump = (function (Raphael) {
             if (icons.hasOwnProperty(name)) {
                 attrs.y = orig.y + attrs.r*Math.cos(start)/2;
                 attrs.x = orig.x + attrs.r*Math.sin(start)/2;
-                icon(name, Object.merge(icons[name], attrs));
+                icon(name, Object.extend(attrs, icons[name]));
                 start += angle;
             }
         }

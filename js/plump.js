@@ -41,7 +41,7 @@ var plump = (function (Raphael) {
         var r = Raphael(x-2, y-2, attrs.size + 4, attrs.size + 4),
             s = r.path(paths[name]).scale(attrs.size/32, attrs.size/32, 0, 0).translate(2, 2).attr({fill: 'none', stroke: attrs.glow, 'stroke-width': attrs['glow-width']}),
             icon = r.path(paths[name]).scale(attrs.size/32, attrs.size/32, 0, 0).translate(2, 2).attr(attrs),
-            target = r.rect(0, 0, 32, 32).attr(none).click(function () {
+            target = r.rect(0, 0, 32, 32).attr({fill: 'blue', opacity: 0.1}).click(function () {
                 icon.attr({fill: "90-#0050af-#002c62"});
             }).hover(function () {
                 if (attrs.hover) {
@@ -56,7 +56,20 @@ var plump = (function (Raphael) {
                , target: target
                , attrs: attrs
                , name: name
-               , attr: function(attrs) { icon.attr(attrs); return this; }
+               , setSize: function(width, height) {
+                              r.setSize(width, height);
+                              return this; 
+                          }
+               , attr: function(attrs) {
+                           icon.attr(attrs);
+                           return this;
+                       }
+               , translate: function(x, y) {
+                          target.translate(x,y);
+                          s.translate(x,y);
+                          icon.translate(x,y);
+                       }
+               , draggable: function() { return draggable(this);}
                }
     };
 
@@ -91,6 +104,24 @@ var plump = (function (Raphael) {
                 start += angle;
             }
         }
+    };
+
+    var draggable = plump.draggable = function(icon) {
+        var ox = oy = 0;
+        var start = function () {
+            ox = oy = 0;
+        },
+        move = function (dx, dy) {
+            var trans_x = dx - ox;
+            var trans_y = dy - oy;
+            icon.translate(trans_x, trans_y);
+            ox = dx;
+            oy = dy;
+        },
+        up = function () {
+        };
+        icon.target.drag(move, start, up);
+        return icon;
     };
 
     /*
